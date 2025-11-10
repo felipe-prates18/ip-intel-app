@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="pt-br" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ASPER • IP Intelligence</title>
+  <link rel="icon" href="/static/favicon.png"/>
+  <style>
+    :root{
+      --green:#15C06E; --green-2:#0E8D56; --bg:#0B2A22; --bg-2:#081912; --text:#E6F6EF;
+      --muted:#94B8A8; --card:#102C24; --line:#14523E; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;background:linear-gradient(180deg,var(--bg),var(--bg-2));color:var(--text);
+      font:15.5px/1.45 system-ui,Segoe UI,Roboto,Ubuntu,Arial;position:relative;overflow-x:hidden;
+    }
+    /* Marca d’água ASPER */
+    body::after{
+      content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+      background:url('/static/logo-asper.png') center/45vw no-repeat;
+      opacity:.08;filter:drop-shadow(0 0 24px rgba(0,0,0,.4));
+    }
+    .wrap{max-width:1180px;margin:0 auto;padding:28px;position:relative;z-index:1}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .brand img{height:40px}
+    .title h1{margin:0;color:var(--green)}
+    .title .sub{color:var(--muted);margin-top:4px}
+
+    /* Abas de modo */
+    .tabs-mode{display:flex;gap:8px;margin:14px 0 8px 0;flex-wrap:wrap}
+    .tab{padding:8px 10px;border-radius:10px;border:1px solid var(--line);cursor:pointer;color:var(--muted)}
+    .tab.active{color:var(--text);border-color:var(--green)}
+
+    .row{display:flex;gap:10px;align-items:center}
+    .search input, textarea{
+      flex:1;border:1px solid var(--line);background:var(--card);color:var(--text);
+      padding:12px 14px;border-radius:12px;font-size:16px;outline:none;
+    }
+    /* Espaçamento entre a área de busca e os cards */
+    .search { margin-bottom: 28px; }
+
+    textarea{min-height:120px;resize:vertical}
+    .btn{
+      border:none;background:linear-gradient(180deg,var(--green),var(--green-2));color:#00180F;
+      padding:12px 20px;border-radius:12px;cursor:pointer;font-weight:600
+    }
+    .btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--line)}
+    .btn.secondary:hover{border-color:var(--green)}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
+
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+    .card h3{margin:0 0 10px 0;font-size:17px}
+    .kv{display:grid;grid-template-columns:160px 1fr;gap:6px;font-size:14px}
+    .kv div:nth-child(odd){color:var(--muted)}
+    
+    /* Espaço entre os dados (kv) e o botão "Copiar JSON" nas fontes */
+    .src > .row { 
+      margin-top: 16px;
+    }
+
+    .badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;font-size:13px;border:1px solid var(--line)}
+    .b-ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4)}
+    .b-warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4)}
+    .b-danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4)}
+
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px}
+    @media (max-width:980px){ .summary{grid-template-columns:1fr 1fr} }
+    .metric{border:1px solid var(--line);border-radius:12px;padding:14px}
+    .metric .k{font-weight:800;font-size:22px}
+    .metric .l{color:var(--muted);font-size:13px}
+
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .chip{background:rgba(18,199,127,.15);border:1px solid rgba(18,199,127,.45);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px}
+
+    .tabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .tab-src{padding:8px 10px;border-radius:10px;border:1px solid var(--line);cursor:pointer;color:var(--muted)}
+    .tab-src.active{color:var(--text);border-color:var(--green)}
+    .src{display:none}.src.active{display:block}
+
+    pre{margin:0;background:#0a1916;border-radius:12px;padding:14px;overflow:auto;max-height:55vh;border:1px solid var(--line)}
+    .loader{display:none;margin-top:12px}
+    .spinner{width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error{color:#ffb4b4;margin-top:8px}
+    .small{font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+
+    /* Caixas de Insights IA */
+    #ai-box .btn.secondary, #ai-box-hash .btn.secondary {
+      background: var(--card); color: var(--text); border: 1px solid var(--line);
+    }
+    #ai-box .btn.secondary:hover, #ai-box-hash .btn.secondary:hover { border-color: var(--green); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img src="/static/logo-asper.png" alt="ASPER">
+        <div class="title">
+          <h1>IP Intelligence Aggregator</h1>
+          <div class="sub">Consulta única, por domínio e em lote — com VirusTotal, AbuseIPDB, IPQS, IPinfo e OTX.</div>
+        </div>
+      </div>
+      <div><a class="btn" href="/docs" target="_blank" rel="noopener">API</a></div>
+    </header>
+
+    <!-- Abas: IP / Domínio / Hash / Lote -->
+    <div class="tabs-mode">
+      <div class="tab active" data-mode="ip">IP</div>
+      <div class="tab" data-mode="domain">Domínio</div>
+      <div class="tab" data-mode="hash">Hash</div>
+      <div class="tab" data-mode="batch">Lote</div>
+    </div>
+
+    <!-- IP -->
+    <div id="mode-ip" class="search">
+      <div class="row" style="width:100%">
+        <input id="ip" type="text" placeholder="Ex.: 8.8.8.8"/>
+        <button id="go-ip" class="btn">Consultar</button>
+        <button id="dl-ip-json" class="btn secondary">Baixar JSON</button>
+        <button id="dl-ip-csv" class="btn secondary">Baixar CSV</button>
+        <!-- IA (aparece só se ENABLE_AI=true) -->
+        <button id="btn-insights-ip" class="btn" style="display:none;">⚡ Gerar Insights com IA</button>
+      </div>
+    </div>
+
+    <!-- Domínio -->
+    <div id="mode-domain" class="search" style="display:none">
+      <div class="row" style="width:100%">
+        <input id="domain" type="text" placeholder="Ex.: example.org"/>
+        <button id="go-domain" class="btn">Consultar</button>
+        <button id="dl-dom-json" class="btn secondary">Baixar JSON</button>
+        <button id="dl-dom-csv" class="btn secondary">Baixar CSV</button>
+        <!-- IA -->
+        <button id="btn-insights-domain" class="btn" style="display:none;">⚡ Gerar Insights com IA</button>
+      </div>
+    </div>
+
+    <!-- Hash -->
+    <div id="mode-hash" class="search" style="display:none">
+      <div class="row" style="width:100%">
+        <input id="hash" type="text" placeholder="Informe MD5 (32 hex) ou SHA256 (64 hex)"/>
+        <button id="go-hash" class="btn">Consultar</button>
+        <button id="dl-hash-json" class="btn secondary">Baixar JSON</button>
+        <button id="dl-hash-csv" class="btn secondary">Baixar CSV</button>
+        <button id="btn-insights-hash" class="btn" style="display:none;">⚡ Gerar Insights com IA</button>
+      </div>
+    </div>
+
+    <!-- Lote -->
+    <div id="mode-batch" class="search" style="display:none">
+      <div style="width:100%">
+        <label for="batch" style="font-weight:600;color:var(--muted);margin-bottom:6px;display:block;">Entradas manuais</label>
+        <textarea id="batch" placeholder="Digite um item por linha. IPs e/ou domínios." style="margin-bottom:14px"></textarea>
+
+        <div class="upload-box" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+          <div>
+            <label for="file" class="btn secondary" style="cursor:pointer;">Escolher arquivo</label>
+            <input id="file" type="file" accept=".csv,.xlsx" style="display:none;">
+            <span id="file-name" class="small" style="margin-left:8px;color:var(--muted);">Nenhum arquivo selecionado</span>
+          </div>
+
+          <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="preview-file" class="btn secondary">Preview</button>
+            <button id="process-file" class="btn secondary">Processar</button>
+            <button id="go-batch" class="btn">Consultar lote</button>
+          </div>
+        </div>
+
+        <div class="export-actions" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="dl-batch-json" class="btn secondary">Baixar JSON</button>
+          <button id="dl-batch-csv" class="btn secondary">Baixar CSV</button>
+        </div>
+
+        <div id="preview" class="small" style="margin-top:10px"></div>
+        <div class="small" style="margin-top:8px;color:var(--muted);">Aceita IPs e domínios misturados; respeita limites das APIs.</div>
+      </div>
+    </div>
+
+    <div class="loader"><div class="spinner"></div></div>
+
+    <!-- Painéis IP/DOMÍNIO -->
+    <div class="grid" id="panels" style="display:none">
+      <!-- Resumo -->
+      <section class="card">
+        <h3>Resumo & Veredito</h3>
+        <div class="kv" id="kv"></div>
+        <div class="verdict" id="verdict"></div>
+        <h3 style="margin-top:14px">Métricas rápidas</h3>
+        <div class="summary" id="summary"></div>
+        <div class="chips" id="tags"></div>
+        <span class="small" id="ts"></span>
+      </section>
+
+      <!-- Fontes -->
+      <section class="card">
+        <h3>Fontes</h3>
+        <div class="tabs" id="tabs">
+          <div class="tab-src active" data-t="virustotal">VirusTotal</div>
+          <div class="tab-src" data-t="abuseipdb">AbuseIPDB</div>
+          <div class="tab-src" data-t="ipqualityscore">IPQualityScore</div>
+          <div class="tab-src" data-t="ipinfo">IPinfo.io</div>
+          <div class="tab-src" data-t="otx">OTX</div>
+        </div>
+
+        <!-- VT -->
+        <div id="virustotal" class="src active">
+          <div class="kv" id="vt-mini"></div>
+          <div class="row"><button class="btn" data-copy="vt">Copiar JSON</button><span class="small" data-toggle="vt" style="cursor:pointer">mostrar JSON</span></div>
+          <div style="margin-top:10px;display:none" id="vt-json"><pre id="vt-pre"></pre></div>
+        </div>
+        <!-- AbuseIPDB -->
+        <div id="abuseipdb" class="src">
+          <div class="kv" id="ab-mini"></div>
+          <div class="row"><button class="btn" data-copy="ab">Copiar JSON</button><span class="small" data-toggle="ab" style="cursor:pointer">mostrar JSON</span></div>
+          <div style="margin-top:10px;display:none" id="ab-json"><pre id="ab-pre"></pre></div>
+        </div>
+        <!-- IPQS -->
+        <div id="ipqualityscore" class="src">
+          <div class="kv" id="ipqs-mini"></div>
+          <div class="row"><button class="btn" data-copy="ipqs">Copiar JSON</button><span class="small" data-toggle="ipqs" style="cursor:pointer">mostrar JSON</span></div>
+          <div style="margin-top:10px;display:none" id="ipqs-json"><pre id="ipqs-pre"></pre></div>
+        </div>
+        <!-- IPinfo -->
+        <div id="ipinfo" class="src">
+          <div class="kv" id="ipinfo-mini"></div>
+          <div class="row"><button class="btn" data-copy="ipinfo">Copiar JSON</button><span class="small" data-toggle="ipinfo" style="cursor:pointer">mostrar JSON</span></div>
+          <div style="margin-top:10px;display:none" id="ipinfo-json"><pre id="ipinfo-pre"></pre></div>
+        </div>
+        <!-- OTX -->
+        <div id="otx" class="src">
+          <div class="kv" id="ot-mini"></div>
+          <div class="row"><button class="btn" data-copy="ot">Copiar JSON</button><span class="small" data-toggle="ot" style="cursor:pointer">mostrar JSON</span></div>
+          <div style="margin-top:10px;display:none" id="ot-json"><pre id="ot-pre"></pre></div>
+        </div>
+      </section>
+
+      <!-- IA (IP/DOM) -->
+      <section class="card" id="ai-box" style="display:none; grid-column: 1 / -1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+          <h3 style="margin:0">Insights com IA</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="ai-copy" class="btn secondary">Copiar</button>
+            <button id="ai-clear" class="btn secondary">Limpar</button>
+          </div>
+        </div>
+        <div id="ai-body"
+             style="white-space:pre-wrap; border:1px solid var(--line); background:#0a1916; padding:14px; border-radius:12px; min-height:140px; overflow:auto; max-height:50vh;"></div>
+      </section>
+    </div>
+
+    <!-- Painéis HASH -->
+    <div class="grid" id="panels-hash" style="display:none">
+      <section class="card">
+        <h3>Resumo do Arquivo</h3>
+        <div class="kv" id="hash-kv"></div>
+        <div class="summary" id="hash-summary"></div>
+        <span class="small" id="hash-ts"></span>
+      </section>
+
+      <section class="card">
+        <h3>Fontes (Hash/Arquivo)</h3>
+        <div class="tabs" id="tabs-hash">
+          <div class="tab-src active" data-t="vtfile">VirusTotal</div>
+          <div class="tab-src" data-t="hybrid">Hybrid Analysis</div>
+        </div>
+
+        <div id="vtfile" class="src active">
+          <div class="kv" id="vtfile-mini"></div>
+          <div class="row"><button class="btn" data-copy="vtfile">Copiar JSON</button><span class="small" data-toggle="vtfile" style="cursor:pointer">mostrar JSON</span></div>
+          <div style="margin-top:10px;display:none" id="vtfile-json"><pre id="vtfile-pre"></pre></div>
+        </div>
+
+        <div id="hybrid" class="src">
+          <div class="kv" id="ha-mini"></div>
+          <div class="row"><button class="btn" data-copy="ha">Copiar JSON</button><span class="small" data-toggle="ha" style="cursor:pointer">mostrar JSON</span></div>
+          <div style="margin-top:10px;display:none" id="ha-json"><pre id="ha-pre"></pre></div>
+        </div>
+      </section>
+
+      <!-- IA (HASH) -->
+      <section class="card" id="ai-box-hash" style="display:none; grid-column: 1 / -1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+          <h3 style="margin:0">Insights com IA — Hash</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="ai-copy-hash" class="btn secondary">Copiar</button>
+            <button id="ai-clear-hash" class="btn secondary">Limpar</button>
+          </div>
+        </div>
+        <div id="ai-body-hash"
+             style="white-space:pre-wrap; border:1px solid var(--line); background:#0a1916; padding:14px; border-radius:12px; min-height:140px; overflow:auto; max-height:50vh;"></div>
+      </section>
+    </div>
+
+    <div id="msg" class="error"></div>
+  </div>
+
+  <script>
+    const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+
+    /* Troca de modo (inclui 'hash') */
+    $$('.tabs-mode .tab').forEach(t=>t.onclick=()=>{
+      $$('.tabs-mode .tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      ['ip','domain','hash','batch'].forEach(m=>$('#mode-'+m).style.display = (m===t.dataset.mode?'block':'none'));
+      // Esconde painéis e cards de IA ao trocar de aba
+      $('#panels').style.display='none';
+      $('#panels-hash').style.display='none';
+      const ib = document.getElementById('ai-box'); if (ib) ib.style.display='none';
+      const hb = document.getElementById('ai-box-hash'); if (hb) hb.style.display='none';
+      $('#msg').textContent='';
+    });
+
+    /* Abas das fontes (IP/DOM) */
+    $$('#tabs .tab-src').forEach(t=>t.onclick=()=>{
+      $$('#tabs .tab-src').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+      $$('.src').forEach(s=>s.classList.remove('active')); $('#'+t.dataset.t).classList.add('active');
+    });
+
+    /* Abas das fontes (HASH) */
+    $$('#tabs-hash .tab-src').forEach(t=>t.onclick=()=>{
+      $$('#tabs-hash .tab-src').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+      ['vtfile','hybrid'].forEach(id=>document.getElementById(id).classList.remove('active'));
+      document.getElementById(t.dataset.t).classList.add('active');
+    });
+
+    // Toggler e copiar JSON (ambos painéis)
+    $$('[data-toggle]').forEach(t=>t.onclick=()=>{
+      const id=t.dataset.toggle, box=$('#'+id+'-json');
+      const open=box.style.display!=='none'; box.style.display=open?'none':'block';
+      t.textContent=(open?'mostrar':'ocultar')+' JSON';
+    });
+    $$('[data-copy]').forEach(b=>b.onclick=()=>{
+      const pre=$('#'+b.dataset.copy+'-pre'); navigator.clipboard.writeText(pre.textContent||'');
+      b.textContent='Copiado!'; setTimeout(()=>b.textContent='Copiar JSON',1200);
+    });
+
+    /* Refs IP/DOM */
+    const ipIn=$('#ip'), goIp=$('#go-ip'), panels=$('#panels'), loader=$('.loader'),
+          kv=$('#kv'), verdict=$('#verdict'), summary=$('#summary'), tags=$('#tags'), ts=$('#ts'), msg=$('#msg');
+    const vtMini=$('#vt-mini'), abMini=$('#ab-mini'), ipqsMini=$('#ipqs-mini'), ipinfoMini=$('#ipinfo-mini'), otMini=$('#ot-mini');
+    const vtPre=$('#vt-pre'), abPre=$('#ab-pre'), ipqsPre=$('#ipqs-pre'), ipinfoPre=$('#ipinfo-pre'), otPre=$('#ot-pre');
+
+    /* Helpers de download/export */
+    function downloadBlob(filename, content, type='application/octet-stream'){
+      const blob=new Blob([content],{type}); const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+    function toCSV(rows){
+      if(!rows.length) return '';
+      const headers = Object.keys(rows[0]);
+      const esc = v => {
+        if (v===null||v===undefined) return '';
+        v = String(v);
+        return /[",\n;]/.test(v) ? `"${v.replace(/"/g,'""')}"` : v;
+      };
+      const lines = [headers.join(',')].concat(rows.map(r=>headers.map(h=>esc(r[h])).join(',')));
+      return lines.join('\n');
+    }
+
+    /* Estado para exportações e IA */
+    let lastIpJson=null, lastIpFlat=null;
+    let lastDomJson=null, lastDomFlat=null;
+    let lastBatchJson=null, lastBatchFlat=null;
+    let lastHashJson=null, lastHashFlat=null;
+
+    /* Helper genérico de fetch JSON robusto */
+    async function fetchJson(url, options){
+      const r=await fetch(url, options);
+      if(!r.ok){
+        let err = 'HTTP '+r.status;
+        try{ const j=await r.json(); if(j?.detail) err=j.detail; }catch{}
+        throw new Error(err);
+      }
+      return r.json();
+    }
+
+    /* ===== IP único ===== */
+    async function runIp(){
+      const ip=ipIn.value.trim(); if(!ip) return;
+      msg.textContent=''; loader.style.display='block'; panels.style.display='none';
+      try{
+        const data=await fetchJson('/api/lookup?ip='+encodeURIComponent(ip));
+        renderIp(ip, data.sources);
+        lastIpJson = data;
+        lastIpFlat = [flattenIpResult(ip, data.sources)];
+      }catch(e){msg.textContent='Falha: '+e.message;}finally{loader.style.display='none';}
+    }
+    goIp?.addEventListener('click', runIp);
+    ipIn?.addEventListener('keydown', e=>{if(e.key==='Enter')runIp()});
+
+    document.getElementById('dl-ip-json')?.addEventListener('click', ()=>{
+      if(!lastIpJson){msg.textContent='Faça uma consulta de IP primeiro.';return;}
+      downloadBlob('ipintel_ip.json', JSON.stringify(lastIpJson,null,2), 'application/json');
+    });
+    document.getElementById('dl-ip-csv')?.addEventListener('click', ()=>{
+      if(!lastIpFlat){msg.textContent='Faça uma consulta de IP primeiro.';return;}
+      downloadBlob('ipintel_ip.csv', toCSV(lastIpFlat), 'text/csv');
+    });
+
+    /* ===== Domínio ===== */
+    const domIn=$('#domain'), goDom=$('#go-domain');
+    goDom?.addEventListener('click', async ()=>{
+      const d=domIn.value.trim(); if(!d) return;
+      msg.textContent=''; loader.style.display='block'; panels.style.display='none';
+      try{
+        const data=await fetchJson('/api/lookup/domain?domain='+encodeURIComponent(d));
+
+        // VT & OTX domínio
+        vtPre.textContent=JSON.stringify(data.sources.virustotal,null,2);
+        otPre.textContent=JSON.stringify(data.sources.otx,null,2);
+
+        fillKV(vtMini,{"Reputation":safe(data.sources.virustotal?.reputation),
+                       "Malicious":safe(data.sources.virustotal?.malicious),
+                       "Suspicious":safe(data.sources.virustotal?.suspicious)});
+        fillKV(otMini,{"Pulses":safe(data.sources.otx?.pulse_count),
+                       "Registrar":safe(data.sources.otx?.whois?.registrar),
+                       "Criação":safe(data.sources.otx?.whois?.creation_date)});
+
+        // Resumo topo
+        kv.innerHTML='';
+        fillKV(kv,{"Domínio":d,"IPs resolvidos": (data.resolved_ips||[]).join(', ') || '—'});
+
+        // Métricas rápidas (corrigido)
+        const vt = data.sources?.virustotal || {};
+        const ot = data.sources?.otx || {};
+        summary.innerHTML='';
+        summary.append( metric(vt.malicious  ?? '—', 'VT Malicious') );
+        summary.append( metric(vt.suspicious ?? '—', 'VT Suspicious') );
+        summary.append( metric(vt.harmless   ?? '—', 'VT Harmless') );
+        summary.append( metric(ot.pulse_count ?? '—', 'OTX Pulses') );
+
+        verdict.innerHTML=`<span class="badge">Consulta de domínio</span>`;
+
+        // Tags úteis
+        tags.innerHTML='';
+        if (ot?.whois?.registrar) tags.append( chip(ot.whois.registrar) );
+        if (typeof vt?.reputation !== 'undefined') tags.append( chip('Reputation: '+vt.reputation) );
+
+        ts.textContent='Atualizado: '+new Date().toLocaleString();
+
+        panels.style.display='grid';
+        $$('#tabs .tab-src').forEach(x=>x.classList.remove('active')); $$('#tabs .tab-src')[0].classList.add('active');
+        $$('.src').forEach(s=>s.classList.remove('active')); $('#virustotal').classList.add('active');
+
+        lastDomJson = data;
+        lastDomFlat = [flattenDomainResult(d, data)];
+      }catch(e){msg.textContent='Falha (domínio): '+e.message;}finally{loader.style.display='none';}
+    });
+
+    document.getElementById('dl-dom-json')?.addEventListener('click', ()=>{
+      if(!lastDomJson){msg.textContent='Faça uma consulta de domínio primeiro.';return;}
+      downloadBlob('ipintel_domain.json', JSON.stringify(lastDomJson,null,2), 'application/json');
+    });
+    document.getElementById('dl-dom-csv')?.addEventListener('click', ()=>{
+      if(!lastDomFlat){msg.textContent='Faça uma consulta de domínio primeiro.';return;}
+      downloadBlob('ipintel_domain.csv', toCSV(lastDomFlat), 'text/csv');
+    });
+
+    /* ===== HASH ===== */
+    const hashIn=$('#hash'), goHash=$('#go-hash'),
+          panelsHash=$('#panels-hash'),
+          hashKV=$('#hash-kv'), hashSummary=$('#hash-summary'), hashTS=$('#hash-ts'),
+          vtfileMini=$('#vtfile-mini'), haMini=$('#ha-mini'),
+          vtfilePre=$('#vtfile-pre'), haPre=$('#ha-pre');
+
+    async function runHash(){
+      const h=(hashIn.value||'').trim();
+      if(!h){return;}
+      try{
+        msg.textContent=''; loader.style.display='block';
+        $('#panels').style.display='none'; panelsHash.style.display='none';
+        const data=await fetchJson('/api/lookup/hash?hash='+encodeURIComponent(h));
+        lastHashJson = data;
+        lastHashFlat = [ flattenHashResult(data) ];
+
+        // VT (file)
+        vtfilePre.textContent=JSON.stringify(data.sources.virustotal_file,null,2);
+        const vt=data.sources.virustotal_file||{};
+        const st=vt.stats||{};
+        vtfileMini.innerHTML='';
+        fillKV(vtfileMini, {
+          "Tipo": vt.type_description ?? '—',
+          "Tamanho": vt.size ?? '—',
+          "Malicious": st.malicious ?? '—',
+          "Suspicious": st.suspicious ?? '—',
+          "Harmless": st.harmless ?? '—'
+        });
+
+        // Hybrid Analysis
+        haPre.textContent=JSON.stringify(data.sources.hybrid_analysis,null,2);
+        const ha=data.sources.hybrid_analysis||{};
+        haMini.innerHTML='';
+        fillKV(haMini, {
+          "Verdict": ha.verdict ?? '—',
+          "Threat Score": ha.threat_score ?? '—',
+          "Família": ha.vx_family ?? '—',
+          "Tipo": ha.type ?? '—'
+        });
+
+        // Resumo hash
+        hashKV.innerHTML='';
+        fillKV(hashKV, {
+          "Hash": data.hash,
+          "Tipo": (data.kind||'').toUpperCase(),
+          "MD5": (vt.md5 || ha.md5 || '—'),
+          "SHA256": (vt.sha256 || ha.sha256 || '—'),
+          "Tamanho": (vt.size || ha.size || '—')
+        });
+
+        hashSummary.innerHTML='';
+        hashSummary.append(metric(st.malicious ?? '—','VT Malicious'));
+        hashSummary.append(metric(st.suspicious ?? '—','VT Suspicious'));
+        hashSummary.append(metric(ha.threat_score ?? '—','HA Threat Score'));
+
+        hashTS.textContent='Atualizado: '+new Date().toLocaleString();
+
+        // Mostrar painel
+        panelsHash.style.display='grid';
+
+        $$('#tabs-hash .tab-src').forEach(x=>x.classList.remove('active'));
+        $$('#tabs-hash .tab-src')[0].classList.add('active');
+        ['vtfile','hybrid'].forEach(id=>document.getElementById(id).classList.remove('active'));
+        document.getElementById('vtfile').classList.add('active');
+
+      }catch(e){
+        msg.textContent='Falha (hash): '+e.message;
+      }finally{
+        loader.style.display='none';
+      }
+    }
+    goHash?.addEventListener('click', runHash);
+    hashIn?.addEventListener('keydown', e=>{if(e.key==='Enter')runHash()});
+
+    document.getElementById('dl-hash-json')?.addEventListener('click', ()=>{
+      if(!lastHashJson){msg.textContent='Faça uma consulta de hash primeiro.';return;}
+      downloadBlob('ipintel_hash.json', JSON.stringify(lastHashJson,null,2), 'application/json');
+    });
+    document.getElementById('dl-hash-csv')?.addEventListener('click', ()=>{
+      if(!lastHashFlat){ msg.textContent='Faça uma consulta de hash primeiro.'; return; }
+      downloadBlob('ipintel_hash.csv', toCSV(lastHashFlat), 'text/csv');
+    });
+
+    /* ===== Lote ===== */
+    const batchEl=$('#batch'), goBatch=$('#go-batch'),
+          dlBatchJson=$('#dl-batch-json'), dlBatchCsv=$('#dl-batch-csv');
+
+    goBatch?.addEventListener('click', async ()=>{
+      const lines=(batchEl.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+      const ips=lines.filter(x=>/^[0-9a-fA-F:\.]+$/.test(x));
+      const domains=lines.filter(x=>!ips.includes(x));
+      if(!ips.length && !domains.length){msg.textContent='Informe ao menos um IP ou domínio.';return;}
+      msg.textContent=''; loader.style.display='block'; panels.style.display='none';
+      try{
+        const data=await fetchJson('/api/lookup/batch',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ips,domains})
+        });
+        lastBatchJson=data;
+        const rows=[];
+        (data.ips||[]).forEach(item=>rows.push(flattenIpResult(item.ip, item.sources, 'ip')));
+        (data.domains||[]).forEach(item=>rows.push(flattenDomainResult(item.domain, item)));
+        lastBatchFlat=rows;
+        msg.innerHTML=`<span class="small">Lote concluído — IPs: ${data.count.ips}, Domínios: ${data.count.domains}</span>`;
+      }catch(e){msg.textContent='Falha (lote): '+e.message;}finally{loader.style.display='none';}
+    });
+
+    // Upload arquivo (CSV/XLSX)
+    const fileEl = document.getElementById('file');
+    const fileName = document.getElementById('file-name');
+    const previewBtn = document.getElementById('preview-file');
+    const processBtn = document.getElementById('process-file');
+    const previewBox = document.getElementById('preview');
+
+    fileEl?.addEventListener('change', ()=>{
+      fileName.textContent = fileEl.files.length ? fileEl.files[0].name : 'Nenhum arquivo selecionado';
+    });
+
+    previewBtn?.addEventListener('click', async ()=>{
+      const f=fileEl.files?.[0]; if(!f){msg.textContent='Selecione um arquivo .csv ou .xlsx';return;}
+      const fd=new FormData(); fd.append('action','preview'); fd.append('file',f);
+      msg.textContent=''; loader.style.display='block';
+      try{
+        const r=await fetch('/api/upload',{method:'POST',body:fd}); if(!r.ok) throw new Error('HTTP '+r.status);
+        const data=await r.json();
+        const rows=(data.preview||[]).slice(0,5);
+        const html = `
+          <div><strong>Arquivo:</strong> ${data.filename}</div>
+          <div><strong>Detectados:</strong> IPs ${data.detected?.ips||0} • Domínios ${data.detected?.domains||0}</div>
+          <div style="margin-top:6px"><strong>Preview:</strong></div>
+          <pre>${rows.map(r=>Array.isArray(r)?r.join(', '):JSON.stringify(r)).join('\n')}</pre>`;
+        previewBox.innerHTML=html;
+      }catch(e){ previewBox.innerHTML='Erro no preview: '+e.message; }
+      finally{ loader.style.display='none'; }
+    });
+
+    processBtn?.addEventListener('click', async ()=>{
+      const f=fileEl.files?.[0]; if(!f){msg.textContent='Selecione um arquivo .csv ou .xlsx';return;}
+      const fd=new FormData(); fd.append('action','process'); fd.append('file',f);
+      msg.textContent=''; loader.style.display='block'; panels.style.display='none';
+      try{
+        const r=await fetch('/api/upload',{method:'POST',body:fd}); if(!r.ok) throw new Error('HTTP '+r.status);
+        const data=await r.json(); lastBatchJson=data;
+        const rows=[]; (data.ips||[]).forEach(item=>rows.push(flattenIpResult(item.ip, item.sources, 'ip')));
+        (data.domains||[]).forEach(item=>rows.push(flattenDomainResult(item.domain, item)));
+        lastBatchFlat=rows;
+        msg.innerHTML=`<span class="small">Processado — IPs: ${data.count.ips}, Domínios: ${data.count.domains}</span>`;
+      }catch(e){ msg.textContent='Falha ao processar arquivo: '+e.message; }
+      finally{ loader.style.display='none'; }
+    });
+
+    dlBatchJson?.addEventListener('click', ()=>{
+      if(!lastBatchJson){msg.textContent='Execute um lote primeiro.';return;}
+      downloadBlob('ipintel_batch.json', JSON.stringify(lastBatchJson,null,2), 'application/json');
+    });
+    dlBatchCsv?.addEventListener('click', ()=>{
+      if(!lastBatchFlat){msg.textContent='Execute um lote primeiro.';return;}
+      downloadBlob('ipintel_batch.csv', toCSV(lastBatchFlat), 'text/csv');
+    });
+
+    /* ===== Helpers de UI ===== */
+    function safe(v){return (v??'—');}
+    function fillKV(c,o){
+      c.innerHTML='';
+      Object.entries(o).forEach(([k,v])=>{
+        const kd=document.createElement('div'); kd.textContent=k;
+        const vd=document.createElement('div'); vd.textContent=(v===0?'0':(v||'—'));
+        c.appendChild(kd); c.appendChild(vd);
+      });
+    }
+    function metric(val,label){
+      const el=document.createElement('div'); el.className='metric';
+      el.innerHTML=`<div class="k">${val??'—'}</div><div class="l">${label}</div>`;
+      return el;
+    }
+    function chip(t){const e=document.createElement('span'); e.className='chip'; e.textContent=t; return e;}
+
+    function renderIp(ip,s){
+      vtPre.textContent=JSON.stringify(s.virustotal,null,2);
+      abPre.textContent=JSON.stringify(s.abuseipdb,null,2);
+      ipqsPre.textContent=JSON.stringify(s.ipqualityscore,null,2);
+      ipinfoPre.textContent=JSON.stringify(s.ipinfo,null,2);
+      otPre.textContent=JSON.stringify(s.otx,null,2);
+
+      fillKV(vtMini,{"Malicious":safe(s.virustotal?.malicious),"Suspicious":safe(s.virustotal?.suspicious),
+        "Harmless":safe(s.virustotal?.harmless),"Undetected":safe(s.virustotal?.undetected),
+        "ASN":safe(s.virustotal?.asn),"País":safe(s.virustotal?.country)});
+      fillKV(abMini,{"Abuse Score":safe(s.abuseipdb?.abuseConfidenceScore),"Reports":safe(s.abuseipdb?.totalReports),
+        "ISP":safe(s.abuseipdb?.isp),"Usage":safe(s.abuseipdb?.usageType),"Domain":safe(s.abuseipdb?.domain)});
+      fillKV(ipqsMini,{"Fraud Score":safe(s.ipqualityscore?.fraud_score),"Proxy":safe(s.ipqualityscore?.proxy),
+        "VPN":safe(s.ipqualityscore?.vpn),"TOR":safe(s.ipqualityscore?.tor),
+        "Recent Abuse":safe(s.ipqualityscore?.recent_abuse),"ISP":safe(s.ipqualityscore?.ISP)});
+      fillKV(ipinfoMini,{"Org":safe(s.ipinfo?.org),"Hostname":safe(s.ipinfo?.hostname),"Cidade":safe(s.ipinfo?.city),
+        "Região":safe(s.ipinfo?.region),"País":safe(s.ipinfo?.country),"Coordenadas":safe(s.ipinfo?.loc)});
+      fillKV(otMini,{"Pulses":safe(s.otx?.pulse_count),"ASN":safe(s.otx?.asn),"País":safe(s.otx?.country_code)});
+
+      const vtM=s.virustotal?.malicious??0, vtS=s.virustotal?.suspicious??0,
+            ab=s.abuseipdb?.abuseConfidenceScore??0, ipq=s.ipqualityscore?.fraud_score??0,
+            otP=s.otx?.pulse_count??0;
+      let score=Math.round((vtM*4+vtS*2+ab*0.5+ipq*1.5+otP*3));
+      score=Math.max(0,Math.min(100,score));
+
+      const label=score>=70?['Alto Risco','b-danger']:score>=40?['Atenção','b-warn']:['Baixo Risco','b-ok'];
+
+      kv.innerHTML='';
+      fillKV(kv,{"IP consultado":ip,"Cidade":safe(s.ipinfo?.city),"Região":safe(s.ipinfo?.region),
+        "País":safe(s.ipinfo?.country),"ISP":safe(s.ipqualityscore?.ISP)});
+
+      verdict.innerHTML=`<span class="badge ${label[1]}">${label[0]}</span>
+                         <span class="badge">Score: <strong>${score}</strong>/100</span>
+                         <span class="badge">Fraud Score: <strong>${safe(s.ipqualityscore?.fraud_score)}</strong></span>`;
+
+      summary.innerHTML='';
+      summary.append(metric(vtM,'VT Malicious'));
+      summary.append(metric(ab,'Abuse Score'));
+      summary.append(metric(ipq,'Fraud Score'));
+      summary.append(metric(otP,'OTX Pulses'));
+
+      tags.innerHTML='';
+      if(s.ipqualityscore?.proxy)tags.append(chip('Proxy'));
+      if(s.ipqualityscore?.vpn)tags.append(chip('VPN'));
+      if(s.ipqualityscore?.tor)tags.append(chip('TOR'));
+      if(s.abuseipdb?.usageType)tags.append(chip(s.abuseipdb.usageType));
+      if(s.ipinfo?.org)tags.append(chip(s.ipinfo.org));
+
+      ts.textContent='Atualizado: '+new Date().toLocaleString();
+      panels.style.display='grid';
+    }
+
+    /* Flatteners para CSV */
+    function flattenIpResult(ip, s, type='ip'){
+      const vt=s?.virustotal||{}, ab=s?.abuseipdb||{}, iq=s?.ipqualityscore||{}, ii=s?.ipinfo||{}, ot=s?.otx||{};
+      const vtM=vt.malicious??'', vtS=vt.suspicious??'', abS=ab.abuseConfidenceScore??'',
+            iqF=iq.fraud_score??'', iqP=iq.proxy??'', iqV=iq.vpn??'', iqT=iq.tor??'',
+            city=ii.city??'', region=ii.region??'', country=(ii.country??iq.country_code??''), otP=ot.pulse_count??'';
+      let score=Math.round((Number(vtM)*4+Number(vtS)*2+Number(abS)*0.5+Number(iqF)*1.5+Number(otP)*3));
+      if(!Number.isFinite(score)) score='';
+      return {
+        type, ip,
+        vt_malicious: vtM, vt_suspicious: vtS,
+        abuse_score: abS,
+        ipqs_fraud_score: iqF, ipqs_proxy: iqP, ipqs_vpn: iqV, ipqs_tor: iqT,
+        city, region, country,
+        otx_pulses: otP,
+        isp: iq.ISP ?? ab.isp ?? '',
+        asn: vt.asn ?? '',
+        score
+      };
+    }
+    function flattenDomainResult(domain, data){
+      const vt=data?.sources?.virustotal||{}, ot=data?.sources?.otx||{};
+      const ips=(data?.resolved_ips||[]).join(';');
+      return {
+        type:'domain', domain, resolved_ips: ips,
+        vt_reputation: vt.reputation ?? '',
+        vt_malicious: vt.malicious ?? '',
+        vt_suspicious: vt.suspicious ?? '',
+        otx_pulses: ot.pulse_count ?? '',
+        registrar: ot?.whois?.registrar ?? '',
+        created_at: ot?.whois?.creation_date ?? ''
+      };
+    }
+    function flattenHashResult(data){
+      const vt = data?.sources?.virustotal_file || {};
+      const st = vt.stats || {};
+      const ha = data?.sources?.hybrid_analysis || {};
+      return {
+        type: 'hash',
+        hash: data?.hash || '',
+        kind: (data?.kind || '').toUpperCase(),
+        vt_type: vt.type_description ?? '',
+        vt_size: vt.size ?? '',
+        vt_malicious: st.malicious ?? '',
+        vt_suspicious: st.suspicious ?? '',
+        vt_harmless: st.harmless ?? '',
+        vt_undetected: st.undetected ?? '',
+        ha_verdict: ha.verdict ?? '',
+        ha_threat_score: ha.threat_score ?? '',
+        ha_family: ha.vx_family ?? '',
+        ha_type: ha.type ?? ''
+      };
+    }
+
+    /* ===== IA: refs de ambos os cards ===== */
+    const aiBox  = document.getElementById('ai-box');
+    const aiBody = document.getElementById('ai-body');
+    const aiCopy = document.getElementById('ai-copy');
+    const aiClear= document.getElementById('ai-clear');
+
+    const aiBoxHash  = document.getElementById('ai-box-hash');
+    const aiBodyHash = document.getElementById('ai-body-hash');
+    const aiCopyHash = document.getElementById('ai-copy-hash');
+    const aiClearHash= document.getElementById('ai-clear-hash');
+
+    aiCopy?.addEventListener('click', ()=>{
+      navigator.clipboard.writeText(aiBody.textContent || '');
+      aiCopy.textContent = 'Copiado!'; setTimeout(()=> aiCopy.textContent='Copiar', 1200);
+    });
+    aiClear?.addEventListener('click', ()=>{
+      aiBody.textContent = '';
+      aiBox.style.display = 'none';
+    });
+    aiCopyHash?.addEventListener('click', ()=>{
+      navigator.clipboard.writeText(aiBodyHash.textContent || '');
+      aiCopyHash.textContent = 'Copiado!'; setTimeout(()=> aiCopyHash.textContent='Copiar', 1200);
+    });
+    aiClearHash?.addEventListener('click', ()=>{
+      aiBodyHash.textContent = '';
+      aiBoxHash.style.display = 'none';
+    });
+
+    async function checkAiStatus() {
+      try {
+        const r = await fetch('/api/ai-status', { headers: { 'Accept': 'application/json' }});
+        const data = await r.json();
+        const show = !!data.enabled;
+        ['btn-insights-ip','btn-insights-domain','btn-insights-hash'].forEach(id=>{
+          const el=document.getElementById(id); if(el) el.style.display = show ? 'inline-block' : 'none';
+        });
+        if (!show) {
+          if(aiBox) aiBox.style.display='none';
+          if(aiBoxHash) aiBoxHash.style.display='none';
+        }
+      } catch (e) { console.error('Falha ao verificar status da IA:', e); }
+    }
+
+    function buildContextFromUI(kind){
+      if (kind === 'ip') {
+        const ip = document.getElementById('ip')?.value?.trim();
+        if (!ip || !lastIpJson) return null;
+        return { type: 'ip', query: ip, sources: lastIpJson.sources || {} };
+      }
+      if (kind === 'domain') {
+        const d = document.getElementById('domain')?.value?.trim();
+        if (!d || !lastDomJson) return null;
+        return { type: 'domain', query: d, sources: lastDomJson.sources || {} };
+      }
+      if (kind === 'hash') {
+        const h = document.getElementById('hash')?.value?.trim();
+        if (!h || !lastHashJson) return null;
+        return { type: 'hash', query: h, sources: lastHashJson.sources || {} };
+      }
+      return null;
+    }
+
+    // callInsights
+    async function callInsights(context, clickedBtn) {
+      if (clickedBtn && !clickedBtn.disabled) {
+        clickedBtn.dataset._prev = clickedBtn.textContent;
+        clickedBtn.disabled = true;
+        clickedBtn.textContent = 'Gerando...';
+      }
+
+      const stripHtml = (s) => (s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+
+      try {
+        const resp = await fetch('/api/insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ context })
+        });
+
+        const ct = (resp.headers.get('content-type')||'').toLowerCase();
+        let data;
+        if (ct.includes('application/json')) data = await resp.json();
+        else { const txt = await resp.text(); data = { detail: stripHtml(txt) || 'Resposta não-JSON recebida.' }; }
+
+        if (!resp.ok) throw new Error(data?.detail || 'Erro ao gerar insights.');
+
+        if ((context?.type || '').toLowerCase() === 'hash') {
+          aiBodyHash.textContent = data.insights || 'Sem conteúdo.';
+          aiBoxHash.style.display = 'block';
+          aiBoxHash.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          aiBody.textContent = data.insights || 'Sem conteúdo.';
+          aiBox.style.display = 'block';
+          aiBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } catch (e) {
+        alert('Falha ao gerar insights: ' + (e?.message || e));
+      } finally {
+        if (clickedBtn) {
+          clickedBtn.disabled = false;
+          clickedBtn.textContent = clickedBtn.dataset._prev || '⚡ Gerar Insights com IA';
+          delete clickedBtn.dataset._prev;
+        }
+      }
+    }
+
+    // Bind dos botões de IA
+    document.getElementById('btn-insights-ip')?.addEventListener('click', (e)=>{
+      const ctx = buildContextFromUI('ip'); if(!ctx) return alert('Execute uma consulta de IP antes.');
+      callInsights(ctx, e.currentTarget);
+    });
+    document.getElementById('btn-insights-domain')?.addEventListener('click', (e)=>{
+      const ctx = buildContextFromUI('domain'); if(!ctx) return alert('Execute uma consulta de domínio antes.');
+      callInsights(ctx, e.currentTarget);
+    });
+    document.getElementById('btn-insights-hash')?.addEventListener('click', (e)=>{
+      const ctx = buildContextFromUI('hash'); if(!ctx) return alert('Execute uma consulta de hash antes.');
+      callInsights(ctx, e.currentTarget);
+    });
+
+    checkAiStatus();
+  </script>
+</body>
+</html>
+
